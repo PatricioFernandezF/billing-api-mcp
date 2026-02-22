@@ -166,12 +166,12 @@ async function makeRequest(endpoint, method = "GET", body = null) {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
-  if (args && 'waitForPreviousTools' in args) {
-    delete args.waitForPreviousTools;
-  }
-
   let result = "";
   try {
+    const argsData = { ...args };
+    if ('waitForPreviousTools' in argsData) {
+      delete argsData.waitForPreviousTools;
+    }
     switch (name) {
       case "billing_get_stats":
         result = await makeRequest("/stats");
@@ -180,10 +180,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         result = await makeRequest("/clients");
         break;
       case "billing_get_client":
-        result = await makeRequest(`/clients/${args.id}`);
+        result = await makeRequest(`/clients/${argsData.id}`);
         break;
       case "billing_create_client":
-        result = await makeRequest("/clients", "POST", args);
+        result = await makeRequest("/clients", "POST", argsData);
         break;
       case "billing_list_products":
         result = await makeRequest("/products");
@@ -192,28 +192,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         result = await makeRequest("/invoices");
         break;
       case "billing_get_invoice":
-        result = await makeRequest(`/invoices/${args.id}`);
+        result = await makeRequest(`/invoices/${argsData.id}`);
         break;
       case "billing_create_invoice":
-        result = "DEBUG_ARGS: " + JSON.stringify(args);
-        // result = await makeRequest("/invoices", "POST", args);
+        result = await makeRequest("/invoices", "POST", argsData);
         break;
       case "billing_create_line_item":
-        result = await makeRequest("/line-items", "POST", args);
+        result = await makeRequest("/line-items", "POST", argsData);
         break;
       case "billing_get_top_products":
         result = await makeRequest("/reports/products");
         break;
       case "billing_download_invoice_pdf":
         const fs = await import("fs");
-        const pdfUrl = `${BASE_URL}/invoices/${args.id}/pdf`;
+        const pdfUrl = `${BASE_URL}/invoices/${argsData.id}/pdf`;
         const resp = await fetch(pdfUrl);
         if (!resp.ok) {
           throw new Error(`Failed to download PDF: ${resp.status} ${resp.statusText}`);
         }
         const buffer = await resp.arrayBuffer();
-        fs.writeFileSync(args.output_path, Buffer.from(buffer));
-        result = `PDF successfully saved to ${args.output_path}`;
+        fs.writeFileSync(argsData.output_path, Buffer.from(buffer));
+        result = `PDF successfully saved to ${argsData.output_path}`;
         break;
       default:
         throw new Error(`Unknown tool: ${name}`);
