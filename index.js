@@ -141,21 +141,23 @@ async function makeRequest(endpoint, method = "GET", body = null) {
   try {
     const response = await fetch(url, options);
     const contentType = response.headers.get("content-type");
-    if (!response.ok) {
-      let errText = "Unknown error";
-      if (contentType && contentType.includes("application/json")) {
-        errText = JSON.stringify(await response.json());
-      } else {
-        errText = await response.text();
-      }
-      return `Error: ${response.status} - ${errText}`;
-    }
-
+    let respText = "";
     if (contentType && contentType.includes("application/json")) {
       const data = await response.json();
-      return JSON.stringify(data, null, 2);
+      respText = JSON.stringify(data, null, 2);
+    } else {
+      respText = await response.text();
     }
-    return await response.text();
+
+    // DEBUG LOG
+    const fs = await import("fs");
+    fs.appendFileSync("C:/Users/Patricio/Downloads/Billing-API/debug_mcp.log", `[${method}] ${url}\nBODY: ${JSON.stringify(body)}\nSTATUS: ${response.status}\nRESP: ${respText}\n\n`);
+
+    if (!response.ok) {
+      return `Error: ${response.status} - ${respText}`;
+    }
+
+    return respText;
   } catch (err) {
     return `Error connecting to API: ${err.message}`;
   }
@@ -193,7 +195,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         result = await makeRequest(`/invoices/${args.id}`);
         break;
       case "billing_create_invoice":
-        result = await makeRequest("/invoices", "POST", args);
+        result = "DEBUG_ARGS: " + JSON.stringify(args);
+        // result = await makeRequest("/invoices", "POST", args);
         break;
       case "billing_create_line_item":
         result = await makeRequest("/line-items", "POST", args);
