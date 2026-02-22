@@ -89,6 +89,39 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["client_id", "date"],
         },
       },
+      {
+        name: "billing_create_line_item",
+        description: "Add a line item to an invoice",
+        inputSchema: {
+          type: "object",
+          properties: {
+            invoice_id: { type: "number" },
+            product_id: { type: "number" },
+            description: { type: "string" },
+            quantity: { type: "number" },
+            unit_price: { type: "number" },
+            tax_rate: { type: "number" }
+          },
+          required: ["invoice_id", "description", "quantity", "unit_price"],
+        },
+      },
+      {
+        name: "billing_get_top_products",
+        description: "Get the most sold products",
+        inputSchema: { type: "object", properties: {} },
+      },
+      {
+        name: "billing_download_invoice_pdf",
+        description: "Download the PDF of an invoice to a specific path",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: { type: "number" },
+            output_path: { type: "string" }
+          },
+          required: ["id", "output_path"],
+        },
+      }
     ],
   };
 });
@@ -157,6 +190,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         break;
       case "billing_create_invoice":
         result = await makeRequest("/invoices", "POST", args);
+        break;
+      case "billing_create_line_item":
+        result = await makeRequest("/line-items", "POST", args);
+        break;
+      case "billing_get_top_products":
+        result = await makeRequest("/reports/products");
+        break;
+      case "billing_download_invoice_pdf":
+        const fs = await import("fs");
+        const pdfUrl = `${BASE_URL}/invoices/${args.id}/pdf`;
+        const resp = await fetch(pdfUrl);
+        if (!resp.ok) {
+          throw new Error(`Failed to download PDF: ${resp.status} ${resp.statusText}`);
+        }
+        const buffer = await resp.arrayBuffer();
+        fs.writeFileSync(args.output_path, Buffer.from(buffer));
+        result = `PDF successfully saved to ${args.output_path}`;
         break;
       default:
         throw new Error(`Unknown tool: ${name}`);
