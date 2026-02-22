@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "MCP Server for the Billing API",
   "main": "index.js",
+  "bin": "./index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js"
