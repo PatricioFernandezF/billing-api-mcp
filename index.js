@@ -164,6 +164,10 @@ async function makeRequest(endpoint, method = "GET", body = null) {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
+  if (args && 'waitForPreviousTools' in args) {
+    delete args.waitForPreviousTools;
+  }
+
   let result = "";
   try {
     switch (name) {
